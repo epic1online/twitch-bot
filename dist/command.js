@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Command = void 0;
+exports.CustomCommand = exports.Command = void 0;
+const stock_commands_1 = require("./stock_commands");
 class Command {
     constructor(/*validArgs: any[], */ help, globalCooldown, userCooldown, callback) {
         this._allowedPerChannel = new Map();
@@ -54,4 +55,14 @@ class Command {
     }
 }
 exports.Command = Command;
+class CustomCommand extends Command {
+    constructor(trigger, response) {
+        super('', 0, 0, function (channel, channelId, client, user, args) {
+            client.say(channel, response);
+            return true;
+        });
+        stock_commands_1.commands[trigger] = this;
+    }
+}
+exports.CustomCommand = CustomCommand;
 //# sourceMappingURL=command.js.map

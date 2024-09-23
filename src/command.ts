@@ -1,4 +1,5 @@
 import { ChatClient, ChatUser } from "@twurple/chat";
+import { commands } from "./stock_commands";
 
 export class Command {
 
@@ -76,4 +77,15 @@ export class Command {
     // getArgs() {
     //     return this._validArgs;
     // }
+}
+
+export class CustomCommand extends Command {
+    constructor(trigger: string, response: string) {
+        super('', 0, 0, function (channel, channelId, client, user, args) {
+            client.say(channel, response);
+            return true;
+        });
+
+        commands[trigger] = this;
+    }
 }

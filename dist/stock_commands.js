@@ -111,6 +111,41 @@ exports.commands = {
         msg += `They now have ${balance.get(channelId, user.userId)} tokens`;
         client.say(channel, msg);
         return true;
+    }),
+    addcommand: new command_1.Command('add a custom command: !addcommand [keyword] [response]', 0, 0, function (channel, channelId, client, user, args) {
+        if (args.length < 2) {
+            client.say(channel, `@${user.userName}, ${this.getHelp()}`);
+            return false;
+        }
+        const trigger = args.shift();
+        if (exports.commands.hasOwnProperty(trigger)) {
+            client.say(channel, `@${user.userName} a command with that name already exists`);
+            return false;
+        }
+        new command_1.CustomCommand(trigger, args.join(' '));
+        client.say(channel, `@${user.userName}, !${trigger} was succesfully added`);
+        return true;
+    }),
+    delcommand: new command_1.Command('remove a custom command: !delcommand [keyword]', 0, 0, function (channel, channelId, client, user, args) {
+        if (args.length !== 1) {
+            client.say(channel, `@${user.userName}, ${this.getHelp()}`);
+            return false;
+        }
+        if (exports.commands.hasOwnProperty(args[0])) {
+            delete exports.commands[args[0]];
+            client.say(channel, `@${user.userName}, !${args[0]} was succesfully deleted`);
+        }
+        return false;
+    }),
+    editcommand: new command_1.Command('edit a custom command: !editcommand [keyword] [response]', 0, 0, function (channel, channelId, client, user, args) {
+        if (args.length < 2) {
+            client.say(channel, `@${user.userName}, ${this.getHelp()}`);
+            return false;
+        }
+        const trigger = args.shift();
+        new command_1.CustomCommand(trigger, args.join(' '));
+        client.say(channel, `@${user.userName}, !${trigger} was succesfully changed`);
+        return true;
     })
 };
 //# sourceMappingURL=stock_commands.js.map
