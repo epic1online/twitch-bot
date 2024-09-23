@@ -1,0 +1,5 @@
+.env
+tokens.json
+tokens.*.json
+balances.db
+node_modules

@@ -1,0 +1,23 @@
+{
+  "name": "twitch-bot",
+  "version": "1.0.0",
+  "description": "A multipurpose twitch chat bot",
+  "main": "./dist/client",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "dotenvx run -- node .",
+    "dev": "tsc && dotenvx run -- node ."
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@twurple/api": "^7.1.0",
+    "@twurple/auth": "^7.1.0",
+    "@twurple/chat": "^7.1.0",
+    "@twurple/pubsub": "^7.1.0",
+    "@types/better-sqlite3": "^7.6.11"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.5"
+  }
+}

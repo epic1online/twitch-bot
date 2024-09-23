@@ -1,0 +1,19 @@
+{
+  "name": "twitch_bot",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "",
+  "main": "twurple_bot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@twurple/api": "^7.1.0",
+    "@twurple/auth": "^7.1.0",
+    "@twurple/chat": "^7.1.0",
+    "@twurple/pubsub": "^7.1.0",
+    "better-sqlite3": "^9.4.3"
+  }
+}
