@@ -11,7 +11,6 @@ const clientId: UserIdResolvable = process.env.CLIENT_ID;
 const clientSecret: string = process.env.CLIENT_SECRET;
 const clientUserId: UserIdResolvable = process.env.CLIENT_USER_ID;
 
-var file: string;
 var tokenData: any;
 
 export const authProvider = new RefreshingAuthProvider({ clientId, clientSecret });
@@ -29,8 +28,8 @@ async function main() {
     }
 
     try {
-        file = readFileSync('./tokens.json', 'utf-8');
-        tokenData = JSON.parse(file);
+        const tokenFile = readFileSync('./tokens.json', 'utf-8');
+        tokenData = JSON.parse(tokenFile);
     } catch (e) {
         console.error(e);
     }
@@ -38,7 +37,11 @@ async function main() {
     authProvider.addUser(clientUserId, tokenData);
     authProvider.addIntentsToUser(clientUserId, ['chat']);
 
-    var opts = { authProvider, channels: ['epic1online'] };
+    const channelFile = readFileSync('./channel-list.json', 'utf-8');
+    const channelList = JSON.parse(channelFile).channels;
+    console.log(channelList);
+
+    var opts = { authProvider, channels: channelList };
     chatClient = new ChatClient(opts);
     const apiClient = new ApiClient({ authProvider });
 

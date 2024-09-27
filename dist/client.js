@@ -44,7 +44,6 @@ const listeners_1 = require("./listeners");
 const clientId = process.env.CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
 const clientUserId = process.env.CLIENT_USER_ID;
-var file;
 var tokenData;
 exports.authProvider = new auth_1.RefreshingAuthProvider({ clientId, clientSecret });
 exports.authProvider.onRefresh((userId, newTokenData) => __awaiter(void 0, void 0, void 0, function* () { (0, fs_1.writeFileSync)(`./tokens.json`, JSON.stringify(newTokenData, null, 4), 'utf-8'); }));
@@ -57,15 +56,18 @@ function main() {
             (0, fs_1.writeFileSync)(`./tokens.json`, JSON.stringify(tokenData, null, 4), 'utf-8');
         }
         try {
-            file = (0, fs_1.readFileSync)('./tokens.json', 'utf-8');
-            tokenData = JSON.parse(file);
+            const tokenFile = (0, fs_1.readFileSync)('./tokens.json', 'utf-8');
+            tokenData = JSON.parse(tokenFile);
         }
         catch (e) {
             console.error(e);
         }
         exports.authProvider.addUser(clientUserId, tokenData);
         exports.authProvider.addIntentsToUser(clientUserId, ['chat']);
-        var opts = { authProvider: exports.authProvider, channels: ['epic1online'] };
+        const channelFile = (0, fs_1.readFileSync)('./channel-list.json', 'utf-8');
+        const channelList = JSON.parse(channelFile).channels;
+        console.log(channelList);
+        var opts = { authProvider: exports.authProvider, channels: channelList };
         exports.chatClient = new chat_1.ChatClient(opts);
         const apiClient = new api_1.ApiClient({ authProvider: exports.authProvider });
         exports.chatClient.onMessage((channel, user, text, msg) => {
