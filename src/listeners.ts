@@ -1,18 +1,20 @@
 import { commands } from './stock_commands';
 import { chatClient } from "./client";
 
-chatClient.onMessage((channel, user, text, msg) => {
-    if (!text.startsWith('!')) return;
-    const args = text.toLowerCase().slice(1).split(' ');
-    const command = args.shift();
-    if (commands.hasOwnProperty(command)) {
-        if (commands[command].canExecute(msg.channelId, msg.userInfo.userId)[0]) {
-            commands[command].execute(channel, msg.channelId, chatClient, msg.userInfo, args);
-        } else {
-            chatClient.say(channel, `that command isn't ready yet. (${commands[command].canExecute(msg.channelId, msg.userInfo.userId)[1]} seconds)`);
+export function messageListener() {
+    chatClient.onMessage((channel, user, text, msg) => {
+        if (!text.startsWith('!')) return;
+        const args = text.toLowerCase().slice(1).split(' ');
+        const command = args.shift();
+        if (commands.hasOwnProperty(command)) {
+            if (commands[command].canExecute(msg.channelId, msg.userInfo.userId)[0]) {
+                commands[command].execute(channel, msg.channelId, chatClient, msg.userInfo, args);
+            } else {
+                chatClient.say(channel, `that command isn't ready yet. (${commands[command].canExecute(msg.channelId, msg.userInfo.userId)[1]} seconds)`);
+            }
         }
-    }
-});
+    });
+}
 
 // import { pubSubClient} from "./client";
 // import * as balance from "./balance_manager";

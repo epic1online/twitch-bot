@@ -38,7 +38,9 @@ const chat_1 = require("@twurple/chat");
 const api_1 = require("@twurple/api");
 const console_1 = require("console");
 const fs_1 = require("fs");
+const webserver_1 = require("./webserver");
 const balance = __importStar(require("./balance_manager"));
+const listeners_1 = require("./listeners");
 const clientId = process.env.CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
 const clientUserId = process.env.CLIENT_USER_ID;
@@ -46,49 +48,60 @@ var file;
 var tokenData;
 exports.authProvider = new auth_1.RefreshingAuthProvider({ clientId, clientSecret });
 exports.authProvider.onRefresh((userId, newTokenData) => __awaiter(void 0, void 0, void 0, function* () { (0, fs_1.writeFileSync)(`./tokens.json`, JSON.stringify(newTokenData, null, 4), 'utf-8'); }));
-try {
-    file = (0, fs_1.readFileSync)('./tokens.json', 'utf-8');
-    tokenData = JSON.parse(file);
-}
-catch (e) {
-    console.error(e);
-}
-exports.authProvider.addUser(clientUserId, tokenData);
-exports.authProvider.addIntentsToUser(clientUserId, ['chat']);
-var opts = { authProvider: exports.authProvider, channels: ['epic1online'] };
-exports.chatClient = new chat_1.ChatClient(opts);
-const apiClient = new api_1.ApiClient({ authProvider: exports.authProvider });
-exports.chatClient.onMessage((channel, user, text, msg) => {
-    if (process.env.DEBUG)
-        console.log(`[${msg.date.toTimeString().slice(0, 5)}] info: #[${channel}] <${user}>: ${text}`);
-});
-exports.chatClient.onConnect(() => {
-    console.log(`[${(new Date(Date.now())).toTimeString().slice(0, 5)}] info: connected to twitch servers`);
-});
-exports.chatClient.onDisconnect((manually, reason) => {
-    const time = (new Date(Date.now())).toTimeString().slice(0, 5);
-    if (reason)
-        return console.error(`[${time}] error: ${console_1.error}`);
-    console.log(`[${time}] info: disconnected from twitch servers. manual: ${manually}`);
-});
-exports.chatClient.onJoin((channel, _user) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log(`[${(new Date(Date.now())).toTimeString().slice(0, 5)}] info: joined channel #${channel}`);
-    let emote = channel == 'epic1online' ? 'epic1o1Peek' : 'TwitchConHYPE';
-    exports.chatClient.say(channel, `${emote} bot is connected`);
-    const channelId = (yield apiClient.users.getUserByName(channel)).id;
-    rewardsTimer(channelId);
-}));
-function rewardsTimer(channelId) {
-    balance.createTable(channelId);
-    setInterval(() => __awaiter(this, void 0, void 0, function* () {
-        (yield apiClient.asUser(clientUserId, (ctx) => __awaiter(this, void 0, void 0, function* () {
-            const request = ctx.chat.getChattersPaginated(channelId);
-            return yield request.getAll();
-        }))).forEach((x) => {
-            balance.add(channelId, x.userId, 50);
+function main() {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!(0, fs_1.existsSync)('./tokens.json')) {
+            const code = yield (0, webserver_1.authCodeFlow)(clientId.toString(), clientSecret);
+            const redirectUri = 'http://localhost:3000';
+            tokenData = yield (0, auth_1.exchangeCode)(clientId.toString(), clientSecret, code, redirectUri);
+            (0, fs_1.writeFileSync)(`./tokens.json`, JSON.stringify(tokenData, null, 4), 'utf-8');
+        }
+        try {
+            file = (0, fs_1.readFileSync)('./tokens.json', 'utf-8');
+            tokenData = JSON.parse(file);
+        }
+        catch (e) {
+            console.error(e);
+        }
+        exports.authProvider.addUser(clientUserId, tokenData);
+        exports.authProvider.addIntentsToUser(clientUserId, ['chat']);
+        var opts = { authProvider: exports.authProvider, channels: ['epic1online'] };
+        exports.chatClient = new chat_1.ChatClient(opts);
+        const apiClient = new api_1.ApiClient({ authProvider: exports.authProvider });
+        exports.chatClient.onMessage((channel, user, text, msg) => {
+            if (process.env.DEBUG === "true")
+                console.log(`[${msg.date.toTimeString().slice(0, 5)}] info: #[${channel}] <${user}>: ${text}`);
         });
-    }), 5 * 60 * 1000);
+        exports.chatClient.onConnect(() => {
+            console.log(`[${(new Date(Date.now())).toTimeString().slice(0, 5)}] info: connected to twitch servers`);
+        });
+        exports.chatClient.onDisconnect((manually, reason) => {
+            const time = (new Date(Date.now())).toTimeString().slice(0, 5);
+            if (reason)
+                return console.error(`[${time}] error: ${console_1.error}`);
+            console.log(`[${time}] info: disconnected from twitch servers. manual: ${manually}`);
+        });
+        exports.chatClient.onJoin((channel, _user) => __awaiter(this, void 0, void 0, function* () {
+            console.log(`[${(new Date(Date.now())).toTimeString().slice(0, 5)}] info: joined channel #${channel}`);
+            let emote = channel == 'epic1online' ? 'epic1o1Peek' : 'TwitchConHYPE';
+            exports.chatClient.say(channel, `${emote} bot is connected`);
+            const channelId = (yield apiClient.users.getUserByName(channel)).id;
+            rewardsTimer(channelId);
+        }));
+        function rewardsTimer(channelId) {
+            balance.createTable(channelId);
+            setInterval(() => __awaiter(this, void 0, void 0, function* () {
+                (yield apiClient.asUser(clientUserId, (ctx) => __awaiter(this, void 0, void 0, function* () {
+                    const request = ctx.chat.getChattersPaginated(channelId);
+                    return yield request.getAll();
+                }))).forEach((x) => {
+                    balance.add(channelId, x.userId, 50);
+                });
+            }), 5 * 60 * 1000);
+        }
+        exports.chatClient.connect();
+        (0, listeners_1.messageListener)();
+    });
 }
-require("./listeners"); // hooks listeners into main process
-exports.chatClient.connect();
+main();
 //# sourceMappingURL=client.js.map
