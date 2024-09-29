@@ -38,7 +38,7 @@ async function main() {
     authProvider.addIntentsToUser(clientUserId, ['chat']);
 
     const channelFile = readFileSync('./channel-list.json', 'utf-8');
-    const channelList = JSON.parse(channelFile).channels;
+    const channelList = JSON.parse(channelFile);
 
     var opts = { authProvider, channels: channelList };
     chatClient = new ChatClient(opts);
@@ -46,6 +46,21 @@ async function main() {
 
     chatClient.onMessage((channel, user, text, msg) => {
         if (process.env.DEBUG === "true") console.log(`[${msg.date.toTimeString().slice(0, 5)}] info: #[${channel}] <${user}>: ${text}`);
+
+        const command = text.toLowerCase().slice(1).split(' ').shift();
+        if (msg.channelId == process.env.CLIENT_USER_ID) {
+            if (command === "join") {
+                chatClient.join(user);
+                const channelList = chatClient.currentChannels;
+                channelList.push(`#${user}`);
+                writeFileSync(`./channel-list.json`, JSON.stringify(channelList), 'utf-8');
+            } else if (command === "part") {
+                chatClient.part(user);
+                const channelList = chatClient.currentChannels;
+                channelList.splice(channelList.indexOf(`#${user}`), 1);
+                writeFileSync(`./channel-list.json`, JSON.stringify(channelList), 'utf-8');
+            }
+        }
     });
 
     chatClient.onConnect(() => {
@@ -66,6 +81,10 @@ async function main() {
         rewardsTimer(channelId, channel);
     });
 
+    chatClient.onPart(async (channel, _user) => {
+        console.log(`[${(new Date(Date.now())).toTimeString().slice(0, 5)}] info: parted channel #${channel}`);
+        chatClient.say(channel, 'bot is leaving :(');
+    });
 
     function rewardsTimer(channelId: UserIdResolvable, channel: string) {
         balance.createTable(channelId);

@@ -65,13 +65,28 @@ function main() {
         exports.authProvider.addUser(clientUserId, tokenData);
         exports.authProvider.addIntentsToUser(clientUserId, ['chat']);
         const channelFile = (0, fs_1.readFileSync)('./channel-list.json', 'utf-8');
-        const channelList = JSON.parse(channelFile).channels;
+        const channelList = JSON.parse(channelFile);
         var opts = { authProvider: exports.authProvider, channels: channelList };
         exports.chatClient = new chat_1.ChatClient(opts);
         const apiClient = new api_1.ApiClient({ authProvider: exports.authProvider });
         exports.chatClient.onMessage((channel, user, text, msg) => {
             if (process.env.DEBUG === "true")
                 console.log(`[${msg.date.toTimeString().slice(0, 5)}] info: #[${channel}] <${user}>: ${text}`);
+            const command = text.toLowerCase().slice(1).split(' ').shift();
+            if (msg.channelId == process.env.CLIENT_USER_ID) {
+                if (command === "join") {
+                    exports.chatClient.join(user);
+                    const channelList = exports.chatClient.currentChannels;
+                    channelList.push(`#${user}`);
+                    (0, fs_1.writeFileSync)(`./channel-list.json`, JSON.stringify(channelList), 'utf-8');
+                }
+                else if (command === "part") {
+                    exports.chatClient.part(user);
+                    const channelList = exports.chatClient.currentChannels;
+                    channelList.splice(channelList.indexOf(`#${user}`), 1);
+                    (0, fs_1.writeFileSync)(`./channel-list.json`, JSON.stringify(channelList), 'utf-8');
+                }
+            }
         });
         exports.chatClient.onConnect(() => {
             console.log(`[${(new Date(Date.now())).toTimeString().slice(0, 5)}] info: connected to twitch servers`);
@@ -89,6 +104,10 @@ function main() {
             const channelId = (yield apiClient.users.getUserByName(channel)).id;
             rewardsTimer(channelId, channel);
         }));
+        exports.chatClient.onPart((channel, _user) => __awaiter(this, void 0, void 0, function* () {
+            console.log(`[${(new Date(Date.now())).toTimeString().slice(0, 5)}] info: parted channel #${channel}`);
+            exports.chatClient.say(channel, 'bot is leaving :(');
+        }));
         function rewardsTimer(channelId, channel) {
             balance.createTable(channelId);
             setInterval(() => __awaiter(this, void 0, void 0, function* () {
@@ -101,15 +120,16 @@ function main() {
                     });
                 }
                 catch (e) {
-                    // if (JSON.parse(e.body).status === 403) {
-                    // console.error(`[${new Date().toTimeString().slice(0, 5)}] error: #[${channel}]: couldn't retrieve chatters (is bot modded?) 403 forbidden`);
-                    // } else {
-                    let err = new Error("error retrieving chatters");
-                    err.stack += "\n\nCaused by: " + e.stack;
-                    throw err;
-                    // }
+                    if (JSON.parse(e.body).status === 403) {
+                        console.error(`[${new Date().toTimeString().slice(0, 5)}] error: #[${channel}]: couldn't retrieve chatters (is bot modded?) 403 forbidden`);
+                    }
+                    else {
+                        let err = new Error("error retrieving chatters");
+                        err.stack += "\n\nCaused by: " + e.stack;
+                        throw err;
+                    }
                 }
-            }), 5 * 1 * 1000);
+            }), 5 * 60 * 1000);
         }
         exports.chatClient.connect();
         (0, listeners_1.commandListener)();
