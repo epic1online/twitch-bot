@@ -156,4 +156,4 @@ exports.commands = {
         return false;
     })
 };
-//# sourceMappingURL=stock_commands.js.map
+//# sourceMappingURL=chat_commands.js.map

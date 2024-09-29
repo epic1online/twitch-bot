@@ -1,4 +1,4 @@
-import { commands, customCommands } from './stock_commands';
+import { commands, customCommands } from './chat_commands';
 import { chatClient } from "./client";
 
 export function commandListener() {

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.commandListener = commandListener;
-const stock_commands_1 = require("./stock_commands");
+const chat_commands_1 = require("./chat_commands");
 const client_1 = require("./client");
 function commandListener() {
     client_1.chatClient.onMessage((channel, user, text, msg) => {
@@ -9,8 +9,8 @@ function commandListener() {
             return;
         const args = text.toLowerCase().slice(1).split(' ');
         const command = args.shift();
-        if (stock_commands_1.commands.hasOwnProperty(command)) {
-            let cmd = stock_commands_1.commands[command];
+        if (chat_commands_1.commands.hasOwnProperty(command)) {
+            let cmd = chat_commands_1.commands[command];
             if (cmd.canExecute(msg.channelId, msg.userInfo.userId)[0]) {
                 cmd.execute(channel, msg.channelId, client_1.chatClient, msg.userInfo, args);
             }
@@ -18,8 +18,8 @@ function commandListener() {
                 client_1.chatClient.say(channel, `that command isn't ready yet. (${cmd.canExecute(msg.channelId, msg.userInfo.userId)[1]} seconds)`);
             }
         }
-        else if (stock_commands_1.customCommands[msg.channelId].hasOwnProperty(command)) {
-            let cmd = stock_commands_1.customCommands[msg.channelId][command];
+        else if (chat_commands_1.customCommands[msg.channelId].hasOwnProperty(command)) {
+            let cmd = chat_commands_1.customCommands[msg.channelId][command];
             if (cmd.canExecute(msg.channelId, msg.userInfo.userId)[0]) {
                 cmd.execute(channel, msg.channelId, client_1.chatClient, msg.userInfo, args);
             }
