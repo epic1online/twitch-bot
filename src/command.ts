@@ -105,27 +105,23 @@ export class CustomCommand extends Command {
     }
 
     private run(statement: string, binding: any) {
-        console.log("run");
         db.prepare(`CREATE TABLE IF NOT EXISTS '${this._channelId}'(trigger TEXT PRIMARY KEY, response TEXT)`).run();
         db.prepare(statement).run(binding);
     }
 
     save() {
-        console.log("save");
         let statement = `INSERT INTO '${this._channelId}' (trigger, response) VALUES (@trigger, @response)`;
         let binding = { trigger: this._trigger, response: this._response };
         this.run(statement, binding);
     }
 
     delete() {
-        console.log("delete");
         let statement = `DELETE FROM '${this._channelId}' WHERE trigger = @trigger`;
         let binding = { trigger: this._trigger };
         this.run(statement, binding);
     }
 
     edit(response: string) {
-        console.log("edit");
         this._response = response;
         let statement = `UPDATE '${this._channelId}' SET response = @response WHERE trigger = @trigger`;
         let binding = { trigger: this._trigger, response: this._response };

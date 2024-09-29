@@ -69,7 +69,6 @@ export const commands: { [command: string]: Command } = {
         }
 
         const roll = Math.round(Math.random() * 36);
-        console.log(roll);
         var msg = "the ball lands on ";
 
         if (roll == 0) msg += 'green 0 ';

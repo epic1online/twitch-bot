@@ -88,7 +88,6 @@ exports.commands = {
             low: [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         };
         const roll = Math.round(Math.random() * 36);
-        console.log(roll);
         var msg = "the ball lands on ";
         if (roll == 0)
             msg += 'green 0 ';
