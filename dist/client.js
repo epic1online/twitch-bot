@@ -87,18 +87,29 @@ function main() {
             let emote = channel == 'epic1online' ? 'epic1o1Peek' : 'TwitchConHYPE';
             exports.chatClient.say(channel, `${emote} bot is connected`);
             const channelId = (yield apiClient.users.getUserByName(channel)).id;
-            rewardsTimer(channelId);
+            rewardsTimer(channelId, channel);
         }));
-        function rewardsTimer(channelId) {
+        function rewardsTimer(channelId, channel) {
             balance.createTable(channelId);
             setInterval(() => __awaiter(this, void 0, void 0, function* () {
-                (yield apiClient.asUser(clientUserId, (ctx) => __awaiter(this, void 0, void 0, function* () {
-                    const request = ctx.chat.getChattersPaginated(channelId);
-                    return yield request.getAll();
-                }))).forEach((x) => {
-                    balance.add(channelId, x.userId, 50);
-                });
-            }), 5 * 60 * 1000);
+                try {
+                    (yield apiClient.asUser(clientUserId, (ctx) => __awaiter(this, void 0, void 0, function* () {
+                        const request = ctx.chat.getChattersPaginated(channelId);
+                        return yield request.getAll();
+                    }))).forEach((x) => {
+                        balance.add(channelId, x.userId, 50);
+                    });
+                }
+                catch (e) {
+                    // if (JSON.parse(e.body).status === 403) {
+                    // console.error(`[${new Date().toTimeString().slice(0, 5)}] error: #[${channel}]: couldn't retrieve chatters (is bot modded?) 403 forbidden`);
+                    // } else {
+                    let err = new Error("error retrieving chatters");
+                    err.stack += "\n\nCaused by: " + e.stack;
+                    throw err;
+                    // }
+                }
+            }), 5 * 1 * 1000);
         }
         exports.chatClient.connect();
         (0, listeners_1.commandListener)();

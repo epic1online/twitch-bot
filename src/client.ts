@@ -63,19 +63,29 @@ async function main() {
         let emote = channel == 'epic1online' ? 'epic1o1Peek' : 'TwitchConHYPE';
         chatClient.say(channel, `${emote} bot is connected`);
         const channelId = (await apiClient.users.getUserByName(channel)).id;
-        rewardsTimer(channelId);
+        rewardsTimer(channelId, channel);
     });
 
 
-    function rewardsTimer(channelId: UserIdResolvable) {
+    function rewardsTimer(channelId: UserIdResolvable, channel: string) {
         balance.createTable(channelId);
         setInterval(async () => {
-            (await apiClient.asUser(clientUserId, async ctx => {
-                const request = ctx.chat.getChattersPaginated(channelId);
-                return await request.getAll();
-            })).forEach((x) => {
-                balance.add(channelId, x.userId, 50)
-            });
+            try {
+                (await apiClient.asUser(clientUserId, async ctx => {
+                    const request = ctx.chat.getChattersPaginated(channelId);
+                    return await request.getAll();
+                })).forEach((x) => {
+                    balance.add(channelId, x.userId, 50)
+                });
+            } catch (e) {
+                if (JSON.parse(e.body).status === 403) {
+                    console.error(`[${new Date().toTimeString().slice(0, 5)}] error: #[${channel}]: couldn't retrieve chatters (is bot modded?) 403 forbidden`);
+                } else {
+                    let err = new Error("error retrieving chatters");
+                    err.stack += "\n\nCaused by: " + e.stack;
+                    throw err;
+                }
+            }
 
         }, 5 * 60 * 1000);
     }
