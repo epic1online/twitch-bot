@@ -14,7 +14,7 @@ export function commandListener() {
             } else {
                 chatClient.say(channel, `that command isn't ready yet. (${cmd.canExecute(msg.channelId, msg.userInfo.userId)[1]} seconds)`);
             }
-        } else if (customCommands[msg.channelId].hasOwnProperty(command)) {
+        } else if (customCommands.hasOwnProperty(msg.channelId) && customCommands[msg.channelId].hasOwnProperty(command)) {
             let cmd = customCommands[msg.channelId][command];
             if (cmd.canExecute(msg.channelId, msg.userInfo.userId)[0]) {
                 cmd.execute(channel, msg.channelId, chatClient, msg.userInfo, args);
