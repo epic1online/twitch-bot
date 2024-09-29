@@ -102,6 +102,7 @@ export const commands: { [command: string]: Command } = {
             client.say(channel, `@${user.userName} a command with that name already exists`);
             return false;
         }
+        if (!customCommands.hasOwnProperty(channelId)) customCommands[channelId] = {}
         customCommands[channelId][trigger] = new CustomCommand(channelId, trigger, args.join(' '));
         customCommands[channelId][trigger].save();
         client.say(channel, `@${user.userName}, !${trigger} was succesfully added`);
