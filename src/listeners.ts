@@ -1,16 +1,25 @@
-import { commands } from './stock_commands';
+import { commands, customCommands } from './stock_commands';
 import { chatClient } from "./client";
 
-export function messageListener() {
+export function commandListener() {
+
     chatClient.onMessage((channel, user, text, msg) => {
         if (!text.startsWith('!')) return;
         const args = text.toLowerCase().slice(1).split(' ');
         const command = args.shift();
         if (commands.hasOwnProperty(command)) {
-            if (commands[command].canExecute(msg.channelId, msg.userInfo.userId)[0]) {
-                commands[command].execute(channel, msg.channelId, chatClient, msg.userInfo, args);
+            let cmd = commands[command];
+            if (cmd.canExecute(msg.channelId, msg.userInfo.userId)[0]) {
+                cmd.execute(channel, msg.channelId, chatClient, msg.userInfo, args);
             } else {
-                chatClient.say(channel, `that command isn't ready yet. (${commands[command].canExecute(msg.channelId, msg.userInfo.userId)[1]} seconds)`);
+                chatClient.say(channel, `that command isn't ready yet. (${cmd.canExecute(msg.channelId, msg.userInfo.userId)[1]} seconds)`);
+            }
+        } else if (customCommands[msg.channelId].hasOwnProperty(command)) {
+            let cmd = customCommands[msg.channelId][command];
+            if (cmd.canExecute(msg.channelId, msg.userInfo.userId)[0]) {
+                cmd.execute(channel, msg.channelId, chatClient, msg.userInfo, args);
+            } else {
+                chatClient.say(channel, `that command isn't ready yet. (${cmd.canExecute(msg.channelId, msg.userInfo.userId)[1]} seconds)`);
             }
         }
     });

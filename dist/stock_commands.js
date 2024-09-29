@@ -23,9 +23,10 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.commands = void 0;
+exports.commands = exports.customCommands = void 0;
 const command_1 = require("./command");
 const balance = __importStar(require("./balance_manager"));
+exports.customCommands = command_1.CustomCommand.getFromDB();
 exports.commands = {
     ping: new command_1.Command('', 0, 5, function (channel, channelId, client, user, args) {
         client.say(channel, 'pong!');
@@ -122,7 +123,8 @@ exports.commands = {
             client.say(channel, `@${user.userName} a command with that name already exists`);
             return false;
         }
-        new command_1.CustomCommand(trigger, args.join(' '));
+        exports.customCommands[channelId][trigger] = new command_1.CustomCommand(channelId, trigger, args.join(' '));
+        exports.customCommands[channelId][trigger].save();
         client.say(channel, `@${user.userName}, !${trigger} was succesfully added`);
         return true;
     }),
@@ -131,9 +133,12 @@ exports.commands = {
             client.say(channel, `@${user.userName}, ${this.getHelp()}`);
             return false;
         }
-        if (exports.commands.hasOwnProperty(args[0])) {
-            delete exports.commands[args[0]];
-            client.say(channel, `@${user.userName}, !${args[0]} was succesfully deleted`);
+        const trigger = args[0];
+        if (exports.customCommands[channelId].hasOwnProperty(trigger)) {
+            exports.customCommands[channelId][trigger].delete();
+            delete exports.customCommands[channelId][trigger];
+            client.say(channel, `@${user.userName}, !${trigger} was succesfully deleted`);
+            return true;
         }
         return false;
     }),
@@ -143,9 +148,12 @@ exports.commands = {
             return false;
         }
         const trigger = args.shift();
-        new command_1.CustomCommand(trigger, args.join(' '));
-        client.say(channel, `@${user.userName}, !${trigger} was succesfully changed`);
-        return true;
+        if (exports.customCommands[channelId].hasOwnProperty(trigger)) {
+            exports.customCommands[channelId][trigger].edit(args.join(' '));
+            client.say(channel, `@${user.userName}, !${trigger} was succesfully changed`);
+            return true;
+        }
+        return false;
     })
 };
 //# sourceMappingURL=stock_commands.js.map

@@ -66,7 +66,6 @@ function main() {
         exports.authProvider.addIntentsToUser(clientUserId, ['chat']);
         const channelFile = (0, fs_1.readFileSync)('./channel-list.json', 'utf-8');
         const channelList = JSON.parse(channelFile).channels;
-        console.log(channelList);
         var opts = { authProvider: exports.authProvider, channels: channelList };
         exports.chatClient = new chat_1.ChatClient(opts);
         const apiClient = new api_1.ApiClient({ authProvider: exports.authProvider });
@@ -102,7 +101,7 @@ function main() {
             }), 5 * 60 * 1000);
         }
         exports.chatClient.connect();
-        (0, listeners_1.messageListener)();
+        (0, listeners_1.commandListener)();
     });
 }
 main();

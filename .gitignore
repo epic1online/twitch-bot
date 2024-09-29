@@ -2,4 +2,5 @@
 tokens.json
 tokens.*.json
 balances.db
+custom_commands.db
 node_modules

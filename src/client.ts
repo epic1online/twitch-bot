@@ -5,7 +5,7 @@ import { error } from 'console';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { authCodeFlow } from './webserver';
 import * as balance from './balance_manager';
-import { messageListener } from './listeners';
+import { commandListener } from './listeners';
 
 const clientId: UserIdResolvable = process.env.CLIENT_ID;
 const clientSecret: string = process.env.CLIENT_SECRET;
@@ -39,7 +39,6 @@ async function main() {
 
     const channelFile = readFileSync('./channel-list.json', 'utf-8');
     const channelList = JSON.parse(channelFile).channels;
-    console.log(channelList);
 
     var opts = { authProvider, channels: channelList };
     chatClient = new ChatClient(opts);
@@ -82,7 +81,7 @@ async function main() {
     }
 
     chatClient.connect();
-    messageListener();
+    commandListener();
 }
 
 main();

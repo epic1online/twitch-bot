@@ -1,7 +1,9 @@
 import { Command, CustomCommand } from "./command";
 import * as balance from "./balance_manager"
 
-export var commands: { [command: string]: Command } = {
+export var customCommands: { [channelId: string]: { [command: string]: CustomCommand } } = CustomCommand.getFromDB();
+
+export const commands: { [command: string]: Command } = {
     ping: new Command('', 0, 5, function (channel, channelId, client, user, args) {
         client.say(channel, 'pong!');
         return true;
@@ -100,18 +102,22 @@ export var commands: { [command: string]: Command } = {
             client.say(channel, `@${user.userName} a command with that name already exists`);
             return false;
         }
-        new CustomCommand(trigger, args.join(' '));
+        customCommands[channelId][trigger] = new CustomCommand(channelId, trigger, args.join(' '));
+        customCommands[channelId][trigger].save();
         client.say(channel, `@${user.userName}, !${trigger} was succesfully added`);
         return true;
     }),
-    delcommand: new Command('remove a custom command: !delcommand [keyword]', 0 , 0, function(channel, channelId, client, user, args) {
+    delcommand: new Command('remove a custom command: !delcommand [keyword]', 0, 0, function (channel, channelId, client, user, args) {
         if (args.length !== 1) {
             client.say(channel, `@${user.userName}, ${this.getHelp()}`);
             return false;
         }
-        if (commands.hasOwnProperty(args[0])) {
-            delete commands[args[0]];
-            client.say(channel, `@${user.userName}, !${args[0]} was succesfully deleted`);
+        const trigger = args[0];
+        if (customCommands[channelId].hasOwnProperty(trigger)) {
+            customCommands[channelId][trigger].delete();
+            delete customCommands[channelId][trigger];
+            client.say(channel, `@${user.userName}, !${trigger} was succesfully deleted`);
+            return true;
         }
         return false;
     }),
@@ -121,8 +127,11 @@ export var commands: { [command: string]: Command } = {
             return false;
         }
         const trigger = args.shift();
-        new CustomCommand(trigger, args.join(' '));
-        client.say(channel, `@${user.userName}, !${trigger} was succesfully changed`);
-        return true;
+        if (customCommands[channelId].hasOwnProperty(trigger)) {
+            customCommands[channelId][trigger].edit(args.join(' '));
+            client.say(channel, `@${user.userName}, !${trigger} was succesfully changed`);
+            return true;
+        }
+        return false;
     })
 }

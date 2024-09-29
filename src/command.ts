@@ -1,21 +1,17 @@
 import { ChatClient, ChatUser } from "@twurple/chat";
-import { commands } from "./stock_commands";
 
 export class Command {
-
-    // _validArgs: any[];
     _help: string;
-    _globalCooldown: number;
+    _channelCooldown: number;
     _userCooldown: number;
     _callback: (channel: string, channelId: string | null, client: ChatClient, user: ChatUser, args: string[]) => boolean;
 
     _allowedPerChannel: Map<string | null, number> = new Map();
     _allowedPerChannelUser: Map<string, number> = new Map();
 
-    constructor(/*validArgs: any[], */help: string, globalCooldown: number, userCooldown: number, callback: (channel: string, channelId: string | null, client: ChatClient, user: ChatUser, args: string[]) => boolean) {
-        // this._validArgs = validArgs;
+    constructor(help: string, channelCooldown: number, userCooldown: number, callback: (channel: string, channelId: string | null, client: ChatClient, user: ChatUser, args: string[]) => boolean) {
         this._help = help
-        this._globalCooldown = globalCooldown * 1000;
+        this._channelCooldown = channelCooldown * 1000;
         this._userCooldown = userCooldown * 1000;
         this._callback = callback;
 
@@ -35,15 +31,14 @@ export class Command {
             }
 
         }, 10 * 60 * 1000);
-
     }
 
-    canExecute(channelId: string | null, userId: string) {
+    canExecute(channelId: string, userId: string) {
         const now = Date.now();
 
-        if (this._globalCooldown) {
-            const globalAllowedExecutionTime = this._allowedPerChannel.get(channelId);
-            if (globalAllowedExecutionTime !== undefined && now < globalAllowedExecutionTime) return [false, Math.trunc((globalAllowedExecutionTime - now) / 1000)];
+        if (this._channelCooldown) {
+            const channelAllowedExecutionTime = this._allowedPerChannel.get(channelId);
+            if (channelAllowedExecutionTime !== undefined && now < channelAllowedExecutionTime) return [false, Math.trunc((channelAllowedExecutionTime - now) / 1000)];
         }
 
         if (this._userCooldown) {
@@ -54,38 +49,86 @@ export class Command {
         return [true];
     }
 
-    execute(channel: string, channelId: string | null, client: ChatClient, user: ChatUser, args: string[]) {
+    execute(channel: string, channelId: string, client: ChatClient, user: ChatUser, args: string[]) {
         const now = Date.now();
 
         if (this._callback(channel, channelId, client, user, args)) {
 
-            if (this._globalCooldown) {
-                this._allowedPerChannel.set(channelId, now + this._globalCooldown);
+            if (this._channelCooldown) {
+                this._allowedPerChannel.set(channelId, now + this._channelCooldown);
             }
 
             if (this._userCooldown) {
                 this._allowedPerChannelUser.set(`${channelId}:${user.userId}`, now + this._userCooldown);
             }
         }
-
     }
 
     getHelp() {
         return this._help;
     }
-
-    // getArgs() {
-    //     return this._validArgs;
-    // }
 }
 
+import Database from "better-sqlite3";
+const db = new Database('./custom_commands.db');
+
 export class CustomCommand extends Command {
-    constructor(trigger: string, response: string) {
+
+    static getFromDB() {
+        const channels: string[] = db.prepare("SELECT name FROM sqlite_schema WHERE type ='table' AND name NOT LIKE 'sqlite_%'").all().map((e: any) => { return e.name });
+        var commandList: { [channelId: string]: { [command: string]: CustomCommand } } = {}
+
+        for (const channelId of channels) {
+            commandList[channelId] = {};
+
+            const commands: IterableIterator<any> = db.prepare(`SELECT * FROM '${channelId}'`).iterate();
+            for (const command of commands) {
+                commandList[channelId][command.trigger] = new CustomCommand(channelId, command.trigger, command.response);
+            }
+        }
+        return commandList;
+    }
+
+    _channelId: string;
+    _trigger: string;
+    _response: string
+
+    constructor(channelId: string, trigger: string, response: string) {
         super('', 0, 0, function (channel, channelId, client, user, args) {
             client.say(channel, response);
             return true;
         });
 
-        commands[trigger] = this;
+        this._channelId = channelId;
+        this._trigger = trigger;
+        this._response = response;
+    }
+
+    private run(statement: string, binding: any) {
+        console.log("run");
+        db.prepare(`CREATE TABLE IF NOT EXISTS '${this._channelId}'(trigger TEXT PRIMARY KEY, response TEXT)`).run();
+        db.prepare(statement).run(binding);
+    }
+
+    save() {
+        console.log("save");
+        let statement = `INSERT INTO '${this._channelId}' (trigger, response) VALUES (@trigger, @response)`;
+        let binding = { trigger: this._trigger, response: this._response };
+        this.run(statement, binding);
+    }
+
+    delete() {
+        console.log("delete");
+        let statement = `DELETE FROM '${this._channelId}' WHERE trigger = @trigger`;
+        let binding = { trigger: this._trigger };
+        this.run(statement, binding);
+    }
+
+    edit(response: string) {
+        console.log("edit");
+        this._response = response;
+        let statement = `UPDATE '${this._channelId}' SET response = @response WHERE trigger = @trigger`;
+        let binding = { trigger: this._trigger, response: this._response };
+        this.run(statement, binding);
     }
 }

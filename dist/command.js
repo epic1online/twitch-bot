@@ -1,14 +1,15 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CustomCommand = exports.Command = void 0;
-const stock_commands_1 = require("./stock_commands");
 class Command {
-    constructor(/*validArgs: any[], */ help, globalCooldown, userCooldown, callback) {
+    constructor(help, channelCooldown, userCooldown, callback) {
         this._allowedPerChannel = new Map();
         this._allowedPerChannelUser = new Map();
-        // this._validArgs = validArgs;
         this._help = help;
-        this._globalCooldown = globalCooldown * 1000;
+        this._channelCooldown = channelCooldown * 1000;
         this._userCooldown = userCooldown * 1000;
         this._callback = callback;
         setInterval(() => {
@@ -27,10 +28,10 @@ class Command {
     }
     canExecute(channelId, userId) {
         const now = Date.now();
-        if (this._globalCooldown) {
-            const globalAllowedExecutionTime = this._allowedPerChannel.get(channelId);
-            if (globalAllowedExecutionTime !== undefined && now < globalAllowedExecutionTime)
-                return [false, Math.trunc((globalAllowedExecutionTime - now) / 1000)];
+        if (this._channelCooldown) {
+            const channelAllowedExecutionTime = this._allowedPerChannel.get(channelId);
+            if (channelAllowedExecutionTime !== undefined && now < channelAllowedExecutionTime)
+                return [false, Math.trunc((channelAllowedExecutionTime - now) / 1000)];
         }
         if (this._userCooldown) {
             const userAllowedExecutionTime = this._allowedPerChannelUser.get(`${channelId}:${userId}`);
@@ -42,8 +43,8 @@ class Command {
     execute(channel, channelId, client, user, args) {
         const now = Date.now();
         if (this._callback(channel, channelId, client, user, args)) {
-            if (this._globalCooldown) {
-                this._allowedPerChannel.set(channelId, now + this._globalCooldown);
+            if (this._channelCooldown) {
+                this._allowedPerChannel.set(channelId, now + this._channelCooldown);
             }
             if (this._userCooldown) {
                 this._allowedPerChannelUser.set(`${channelId}:${user.userId}`, now + this._userCooldown);
@@ -55,13 +56,53 @@ class Command {
     }
 }
 exports.Command = Command;
+const better_sqlite3_1 = __importDefault(require("better-sqlite3"));
+const db = new better_sqlite3_1.default('./custom_commands.db');
 class CustomCommand extends Command {
-    constructor(trigger, response) {
+    static getFromDB() {
+        const channels = db.prepare("SELECT name FROM sqlite_schema WHERE type ='table' AND name NOT LIKE 'sqlite_%'").all().map((e) => { return e.name; });
+        var commandList = {};
+        for (const channelId of channels) {
+            commandList[channelId] = {};
+            const commands = db.prepare(`SELECT * FROM '${channelId}'`).iterate();
+            for (const command of commands) {
+                commandList[channelId][command.trigger] = new CustomCommand(channelId, command.trigger, command.response);
+            }
+        }
+        return commandList;
+    }
+    constructor(channelId, trigger, response) {
         super('', 0, 0, function (channel, channelId, client, user, args) {
             client.say(channel, response);
             return true;
         });
-        stock_commands_1.commands[trigger] = this;
+        this._channelId = channelId;
+        this._trigger = trigger;
+        this._response = response;
+    }
+    run(statement, binding) {
+        console.log("run");
+        db.prepare(`CREATE TABLE IF NOT EXISTS '${this._channelId}'(trigger TEXT PRIMARY KEY, response TEXT)`).run();
+        db.prepare(statement).run(binding);
+    }
+    save() {
+        console.log("save");
+        let statement = `INSERT INTO '${this._channelId}' (trigger, response) VALUES (@trigger, @response)`;
+        let binding = { trigger: this._trigger, response: this._response };
+        this.run(statement, binding);
+    }
+    delete() {
+        console.log("delete");
+        let statement = `DELETE FROM '${this._channelId}' WHERE trigger = @trigger`;
+        let binding = { trigger: this._trigger };
+        this.run(statement, binding);
+    }
+    edit(response) {
+        console.log("edit");
+        this._response = response;
+        let statement = `UPDATE '${this._channelId}' SET response = @response WHERE trigger = @trigger`;
+        let binding = { trigger: this._trigger, response: this._response };
+        this.run(statement, binding);
     }
 }
 exports.CustomCommand = CustomCommand;
