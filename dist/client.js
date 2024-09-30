@@ -36,7 +36,6 @@ exports.chatClient = exports.authProvider = void 0;
 const auth_1 = require("@twurple/auth");
 const chat_1 = require("@twurple/chat");
 const api_1 = require("@twurple/api");
-const console_1 = require("console");
 const fs_1 = require("fs");
 const webserver_1 = require("./webserver");
 const balance = __importStar(require("./balance_manager"));
@@ -75,38 +74,47 @@ function main() {
             const command = text.toLowerCase().slice(1).split(' ').shift();
             if (msg.channelId == process.env.CLIENT_USER_ID) {
                 if (command === "join") {
-                    exports.chatClient.join(user);
                     const channelList = exports.chatClient.currentChannels;
+                    if (channelList.includes(`#${user}`))
+                        return;
+                    exports.chatClient.join(user);
                     channelList.push(`#${user}`);
                     (0, fs_1.writeFileSync)(`./channel-list.json`, JSON.stringify(channelList), 'utf-8');
                 }
                 else if (command === "part") {
-                    exports.chatClient.part(user);
                     const channelList = exports.chatClient.currentChannels;
+                    if (!channelList.includes(`#${user}`))
+                        return;
+                    exports.chatClient.part(user);
                     channelList.splice(channelList.indexOf(`#${user}`), 1);
                     (0, fs_1.writeFileSync)(`./channel-list.json`, JSON.stringify(channelList), 'utf-8');
                 }
             }
         });
         exports.chatClient.onConnect(() => {
-            console.log(`[${(new Date(Date.now())).toTimeString().slice(0, 5)}] info: connected to twitch servers`);
+            console.log(`[${new Date().toTimeString().slice(0, 5)}] info: connected to twitch servers`);
         });
         exports.chatClient.onDisconnect((manually, reason) => {
-            const time = (new Date(Date.now())).toTimeString().slice(0, 5);
+            const time = new Date().toTimeString().slice(0, 5);
             if (reason)
-                return console.error(`[${time}] error: ${console_1.error}`);
+                return console.error(`[${time}] error: ${reason}`);
             console.log(`[${time}] info: disconnected from twitch servers. manual: ${manually}`);
+            if (manually)
+                setTimeout(() => {
+                    process.exit(0);
+                }, 60 * 1000);
         });
         exports.chatClient.onJoin((channel, _user) => __awaiter(this, void 0, void 0, function* () {
-            console.log(`[${(new Date(Date.now())).toTimeString().slice(0, 5)}] info: joined channel #${channel}`);
+            console.log(`[${new Date().toTimeString().slice(0, 5)}] info: joined channel #${channel}`);
             let emote = channel == 'epic1online' ? 'epic1o1Peek' : 'TwitchConHYPE';
             exports.chatClient.say(channel, `${emote} bot is connected`);
             const channelId = (yield apiClient.users.getUserByName(channel)).id;
             rewardsTimer(channelId, channel);
         }));
         exports.chatClient.onPart((channel, _user) => __awaiter(this, void 0, void 0, function* () {
-            console.log(`[${(new Date(Date.now())).toTimeString().slice(0, 5)}] info: parted channel #${channel}`);
+            console.log(`[${new Date().toTimeString().slice(0, 5)}] info: parted channel #${channel}`);
             exports.chatClient.say(channel, 'bot is leaving :(');
+            exports.chatClient.quit();
         }));
         function rewardsTimer(channelId, channel) {
             balance.createTable(channelId);

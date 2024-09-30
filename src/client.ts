@@ -1,7 +1,6 @@
 import { exchangeCode, RefreshingAuthProvider } from '@twurple/auth';
 import { ChatClient } from '@twurple/chat';
 import { ApiClient, UserIdResolvable } from '@twurple/api';
-import { error } from 'console';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { authCodeFlow } from './webserver';
 import * as balance from './balance_manager';
@@ -50,13 +49,15 @@ async function main() {
         const command = text.toLowerCase().slice(1).split(' ').shift();
         if (msg.channelId == process.env.CLIENT_USER_ID) {
             if (command === "join") {
-                chatClient.join(user);
                 const channelList = chatClient.currentChannels;
+                if (channelList.includes(`#${user}`)) return;
+                chatClient.join(user);
                 channelList.push(`#${user}`);
                 writeFileSync(`./channel-list.json`, JSON.stringify(channelList), 'utf-8');
             } else if (command === "part") {
-                chatClient.part(user);
                 const channelList = chatClient.currentChannels;
+                if (!channelList.includes(`#${user}`)) return;
+                chatClient.part(user);
                 channelList.splice(channelList.indexOf(`#${user}`), 1);
                 writeFileSync(`./channel-list.json`, JSON.stringify(channelList), 'utf-8');
             }
@@ -64,17 +65,18 @@ async function main() {
     });
 
     chatClient.onConnect(() => {
-        console.log(`[${(new Date(Date.now())).toTimeString().slice(0, 5)}] info: connected to twitch servers`);
+        console.log(`[${new Date().toTimeString().slice(0, 5)}] info: connected to twitch servers`);
     });
 
     chatClient.onDisconnect((manually, reason) => {
-        const time: string = (new Date(Date.now())).toTimeString().slice(0, 5);
-        if (reason) return console.error(`[${time}] error: ${error}`);
+        const time: string = new Date().toTimeString().slice(0, 5);
+        if (reason) return console.error(`[${time}] error: ${reason}`);
         console.log(`[${time}] info: disconnected from twitch servers. manual: ${manually}`);
+        if (manually) setTimeout(() => { process.exit(0) }, 60 * 1000);
     });
 
     chatClient.onJoin(async (channel, _user) => {
-        console.log(`[${(new Date(Date.now())).toTimeString().slice(0, 5)}] info: joined channel #${channel}`);
+        console.log(`[${new Date().toTimeString().slice(0, 5)}] info: joined channel #${channel}`);
         let emote = channel == 'epic1online' ? 'epic1o1Peek' : 'TwitchConHYPE';
         chatClient.say(channel, `${emote} bot is connected`);
         const channelId = (await apiClient.users.getUserByName(channel)).id;
@@ -82,7 +84,7 @@ async function main() {
     });
 
     chatClient.onPart(async (channel, _user) => {
-        console.log(`[${(new Date(Date.now())).toTimeString().slice(0, 5)}] info: parted channel #${channel}`);
+        console.log(`[${new Date().toTimeString().slice(0, 5)}] info: parted channel #${channel}`);
         chatClient.say(channel, 'bot is leaving :(');
     });
 
