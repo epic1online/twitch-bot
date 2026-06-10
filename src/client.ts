@@ -12,7 +12,7 @@ const clientUserId: UserIdResolvable = process.env.CLIENT_USER_ID;
 
 var tokenData: any;
 
-export const authProvider = new RefreshingAuthProvider({ clientId, clientSecret });
+const authProvider = new RefreshingAuthProvider({ clientId, clientSecret });
 export var chatClient: ChatClient;
 
 authProvider.onRefresh(async (userId, newTokenData) => { writeFileSync(`./tokens.json`, JSON.stringify(newTokenData, null, 4), 'utf-8') });
@@ -20,7 +20,7 @@ authProvider.onRefresh(async (userId, newTokenData) => { writeFileSync(`./tokens
 async function main() {
 
     if (!existsSync('./tokens.json')) {
-        const code = await authCodeFlow(clientId.toString(), clientSecret);
+        const code = await authCodeFlow(clientId.toString());
         const redirectUri = 'http://localhost:3000';
         tokenData = await exchangeCode(clientId.toString(), clientSecret, code, redirectUri);
         writeFileSync(`./tokens.json`, JSON.stringify(tokenData, null, 4), 'utf-8');
