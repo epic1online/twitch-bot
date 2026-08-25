@@ -1,5 +1,5 @@
-# DegenGamblingBot
-A Twitch chat bot to help chatters satisfy their gambling addiction
+# EconoBot
+A Twitch chat bot to help chatters satisfy their gambling addiction. Also supports custom commands.
 
 ### Features
 - Chatters earn coins by watching the stream.
